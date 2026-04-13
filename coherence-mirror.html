@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>System coherence under AI-accelerated development</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f4f0;
+    --bg-tertiary: #eeedea;
+    --text-primary: #1a1a18;
+    --text-secondary: #73726c;
+    --text-tertiary: #9c9a92;
+    --border-light: rgba(0,0,0,0.08);
+    --border-mid: rgba(0,0,0,0.14);
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-primary: #1a1a18;
+      --bg-secondary: #262624;
+      --bg-tertiary: #2f2f2c;
+      --text-primary: #e8e6de;
+      --text-secondary: #9c9a92;
+      --text-tertiary: #73726c;
+      --border-light: rgba(255,255,255,0.08);
+      --border-mid: rgba(255,255,255,0.14);
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    padding: 2rem;
+    max-width: 820px;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+  h1 { font-size: 20px; font-weight: 500; margin: 0 0 4px; }
+  .subtitle { font-size: 13px; color: var(--text-secondary); margin: 0 0 24px; }
+  .chart-wrap { position: relative; width: 100%; height: 180px; margin: 0 0 6px; }
+  .legend-row { display: flex; gap: 16px; font-size: 12px; color: var(--text-secondary); margin: 0 0 16px; flex-wrap: wrap; align-items: center; }
+  .leg-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: middle; }
+  .three-col { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.8fr) minmax(0,1.15fr); gap: 12px; margin: 0 0 20px; }
+  .col-card { background: var(--bg-secondary); border-radius: var(--radius); padding: 14px; }
+  .col-hdr { font-size: 13px; font-weight: 500; margin: 0 0 2px; }
+  .col-sub { font-size: 11px; color: var(--text-secondary); margin: 0 0 10px; }
+  .m-row { display: flex; align-items: center; gap: 8px; margin: 0 0 7px; }
+  .m-name { font-size: 12px; color: var(--text-secondary); min-width: 56px; }
+  .m-bg { flex: 1; height: 5px; background: var(--border-light); border-radius: 3px; overflow: hidden; }
+  .m-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+  .m-val { font-size: 12px; font-weight: 500; min-width: 36px; text-align: right; }
+  .dx-feed { min-height: 240px; max-height: 240px; overflow-y: auto; scrollbar-width: thin; }
+  .dx-item { padding: 6px 10px; border-radius: 8px; margin: 0 0 5px; border-left: 3px solid; }
+  .dx-text { font-size: 13px; font-style: italic; line-height: 1.45; margin: 0; }
+  .dx-tag { font-size: 10px; margin: 3px 0 0; display: inline-block; padding: 1px 8px; border-radius: 4px; font-weight: 500; letter-spacing: 0.2px; }
+  .dx-empty { font-size: 13px; color: var(--text-tertiary); font-style: italic; padding: 24px 0; text-align: center; }
+  .meta-row { display: flex; align-items: center; gap: 8px; margin: 10px 0 0; padding: 7px 10px; border-radius: 8px; background: var(--bg-tertiary); }
+  .meta-label { font-size: 11px; color: var(--text-secondary); }
+  .friction-dots { display: flex; gap: 3px; flex: 1; }
+  .f-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .ctrl-area { background: var(--bg-secondary); border-radius: var(--radius); padding: 16px 18px; }
+  .ctrl-row { display: flex; align-items: center; gap: 12px; }
+  .ctrl-label { font-size: 14px; color: var(--text-secondary); white-space: nowrap; }
+  .ctrl-val { font-size: 14px; font-weight: 500; min-width: 40px; text-align: right; }
+  input[type=range] { -webkit-appearance: none; appearance: none; flex: 1; height: 6px; background: var(--border-light); border-radius: 3px; outline: none; cursor: pointer; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--text-primary); cursor: pointer; border: 3px solid var(--bg-primary); }
+  input[type=range]::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: var(--text-primary); cursor: pointer; border: 3px solid var(--bg-primary); }
+  .phase-bar { margin: 10px 0 0; display: flex; gap: 2px; height: 5px; border-radius: 3px; overflow: hidden; }
+  .phase-seg { flex: 1; transition: opacity 0.3s; }
+  .phase-labels { display: flex; margin: 6px 0 0; font-size: 10px; color: var(--text-tertiary); }
+  .phase-labels span { flex: 1; text-align: center; }
+</style>
+</head>
+<body>
+
+<h1>System coherence under AI-accelerated development</h1>
+<p class="subtitle">Drag the slider to see how surface metrics, developer experience, and system structure diverge as AI-generated code volume increases.</p>
+
+<div class="chart-wrap"><canvas id="cv-div" style="width:752px;height:150px"></canvas></div>
+<div class="legend-row">
+  <span><span class="leg-dot" style="background:#0F6E56"></span>Perceived success</span>
+  <span><span class="leg-dot" style="background:#A32D2D"></span>System coherence</span>
+  <span><span class="leg-dot" style="background:#534AB7"></span>Developer friction</span>
+  <span style="margin-left:auto;font-weight:500" id="gap-out">Gap: 0</span>
+</div>
+
+<div class="three-col">
+  <div class="col-card">
+    <p class="col-hdr" style="color:#0F6E56">Surface layer</p>
+    <p class="col-sub">What the dashboard says</p>
+    <div class="m-row"><span class="m-name">Velocity</span><div class="m-bg"><div class="m-fill" id="mb-v" style="width:35%;background:#0F6E56"></div></div><span class="m-val" id="mv-v" style="color:#0F6E56">8</span></div>
+    <div class="m-row"><span class="m-name">Tests</span><div class="m-bg"><div class="m-fill" id="mb-t" style="width:94%;background:#0F6E56"></div></div><span class="m-val" id="mv-t" style="color:#0F6E56">94%</span></div>
+    <div class="m-row"><span class="m-name">Deploys</span><div class="m-bg"><div class="m-fill" id="mb-d" style="width:40%;background:#0F6E56"></div></div><span class="m-val" id="mv-d" style="color:#0F6E56">2</span></div>
+    <div class="m-row"><span class="m-name">Features</span><div class="m-bg"><div class="m-fill" id="mb-f" style="width:30%;background:#0F6E56"></div></div><span class="m-val" id="mv-f" style="color:#0F6E56">3</span></div>
+    <div class="meta-row">
+      <span class="meta-label">Mood</span>
+      <div id="mood-indicator" style="font-size:13px;font-weight:500;color:#0F6E56">Confident</div>
+    </div>
+  </div>
+
+  <div class="col-card">
+    <p class="col-hdr" style="color:#534AB7">Developer experience</p>
+    <p class="col-sub">What engineers actually feel</p>
+    <div class="dx-feed" id="dx-feed">
+      <p class="dx-empty" id="dx-empty">System feels clean and intentional</p>
+    </div>
+    <div class="meta-row">
+      <span class="meta-label">Friction</span>
+      <div class="friction-dots" id="f-dots"></div>
+      <span style="font-size:12px;font-weight:500;" id="f-count">0</span>
+    </div>
+  </div>
+
+  <div class="col-card">
+    <p class="col-hdr" id="s-hdr">Structure</p>
+    <p class="col-sub">System topology</p>
+    <canvas id="cv-s" style="width:100%;height:200px;display:block;"></canvas>
+  </div>
+</div>
+
+<div class="ctrl-area">
+  <div class="ctrl-row">
+    <span class="ctrl-label">AI code volume</span>
+    <input type="range" id="slider" min="0" max="100" value="0" step="1" oninput="update(+this.value)">
+    <span class="ctrl-val" id="vol-out">0%</span>
+  </div>
+  <div class="phase-bar">
+    <div class="phase-seg" id="ph-0" style="background:#0F6E56;opacity:1"></div>
+    <div class="phase-seg" id="ph-1" style="background:#97C459;opacity:0.2"></div>
+    <div class="phase-seg" id="ph-2" style="background:#EF9F27;opacity:0.2"></div>
+    <div class="phase-seg" id="ph-3" style="background:#D85A30;opacity:0.2"></div>
+    <div class="phase-seg" id="ph-4" style="background:#A32D2D;opacity:0.2"></div>
+  </div>
+  <div class="phase-labels">
+    <span>Baseline</span><span>Drift</span><span>Misalignment</span><span>Fragmentation</span><span>Rewrite</span>
+  </div>
+</div>
+
+<script>
+const DPR = window.devicePixelRatio || 1;
+function initC(id) {
+  const c = document.getElementById(id);
+  const r = c.getBoundingClientRect();
+  c.width = r.width * DPR; c.height = r.height * DPR;
+  const x = c.getContext('2d'); x.scale(DPR, DPR);
+  return { x, w: r.width, h: r.height };
+}
+
+const THOUGHTS = [
+  { at: 12, text: '\u201cThis function name feels slightly off\u201d',           tag: 'naming',      sev: 0 },
+  { at: 20, text: '\u201cWhy is this abstracted this way?\u201d',                 tag: 'design',      sev: 0 },
+  { at: 28, text: '\u201cThis test is oddly specific\u201d',                      tag: 'testing',     sev: 0 },
+  { at: 35, text: '\u201cNaming doesn\u2019t match the domain model\u201d',       tag: 'naming',      sev: 0 },
+  { at: 40, text: '\u201cI don\u2019t fully understand this flow\u201d',          tag: 'reasoning',   sev: 1 },
+  { at: 47, text: '\u201cWait, which service owns this?\u201d',                   tag: 'ownership',   sev: 1 },
+  { at: 53, text: '\u201cChanging this broke something unrelated\u201d',          tag: 'coupling',    sev: 1 },
+  { at: 58, text: '\u201cThere are three ways to do the same thing\u201d',        tag: 'consistency', sev: 1 },
+  { at: 63, text: '\u201cThe docs don\u2019t match the code anymore\u201d',       tag: 'drift',       sev: 1 },
+  { at: 68, text: '\u201cI can\u2019t tell if this behavior is intentional\u201d',tag: 'intent',      sev: 2 },
+  { at: 72, text: '\u201cI don\u2019t trust modifying this code\u201d',           tag: 'confidence',  sev: 2 },
+  { at: 78, text: '\u201cLet\u2019s just rewrite this module\u201d',              tag: 'rewrite',     sev: 2 },
+  { at: 83, text: '\u201cDebugging this is painful and unpredictable\u201d',      tag: 'debugging',   sev: 2 },
+  { at: 89, text: '\u201cNobody understands this part of the system\u201d',       tag: 'knowledge',   sev: 2 },
+  { at: 95, text: '\u201cWe need to stop shipping and refactor everything\u201d', tag: 'crisis',      sev: 2 }
+];
+
+const SEV_COLORS = [
+  { border: '#97C459', bg: '#EAF3DE', text: '#173404', tagBg: '#C0DD97', tagColor: '#27500A' },
+  { border: '#EF9F27', bg: '#FAEEDA', text: '#412402', tagBg: '#FAC775', tagColor: '#633806' },
+  { border: '#E24B4A', bg: '#FCEBEB', text: '#501313', tagBg: '#F7C1C1', tagColor: '#791F1F' }
+];
+
+function percS(t) { return 40 + t * 55 + Math.sin(t * 3) * 3; }
+function actC(t) { return 92 - t * t * 82; }
+function devFric(t) { return Math.min(95, 5 + t * t * 85 + t * 10); }
+
+function drawDiv(v) {
+  const { x: ctx, w, h } = initC('cv-div');
+  ctx.clearRect(0, 0, w, h);
+  const pad = { l: 0, r: 8, t: 16, b: 24 };
+  const cw = w - pad.l - pad.r, ch = h - pad.t - pad.b;
+  const isDk = matchMedia('(prefers-color-scheme: dark)').matches;
+  const vt = v / 100;
+
+  [{ x: 0.35, l: 'Drift' }, { x: 0.65, l: 'Fragment' }, { x: 0.85, l: 'Rewrite' }].forEach(m => {
+    const mx = pad.l + m.x * cw;
+    ctx.save(); ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = isDk ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(mx, pad.t); ctx.lineTo(mx, h - pad.b); ctx.stroke(); ctx.restore();
+    ctx.fillStyle = isDk ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.22)';
+    ctx.font = '500 11px "DM Sans", system-ui, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(m.l, mx, h - pad.b + 15);
+  });
+
+  const steps = 200;
+  const gapPts = [];
+  for (let i = 0; i <= steps; i++) {
+    const t = (i / steps) * vt;
+    const x = pad.l + t * cw;
+    gapPts.push({ x, py: pad.t + ch - (percS(t) / 100) * ch, ay: pad.t + ch - (actC(t) / 100) * ch });
+  }
+
+  if (gapPts.length > 1) {
+    ctx.beginPath();
+    ctx.moveTo(gapPts[0].x, gapPts[0].py);
+    gapPts.forEach(p => ctx.lineTo(p.x, p.py));
+    for (let i = gapPts.length - 1; i >= 0; i--) ctx.lineTo(gapPts[i].x, gapPts[i].ay);
+    ctx.closePath();
+    const gs = vt > 0 ? Math.abs(percS(vt) - actC(vt)) / 100 : 0;
+    ctx.fillStyle = isDk ? `rgba(226,75,74,${gs * 0.25})` : `rgba(163,45,45,${gs * 0.15})`;
+    ctx.fill();
+  }
+
+  function drawLine(fn, color, dash) {
+    ctx.save();
+    if (dash) ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    for (let i = 0; i <= steps; i++) {
+      const t = (i / steps) * vt;
+      const x = pad.l + t * cw, y = pad.t + ch - (fn(t) / 100) * ch;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
+    ctx.restore();
+  }
+  drawLine(percS, '#0F6E56', false);
+  drawLine(actC, '#A32D2D', false);
+  drawLine(devFric, '#534AB7', true);
+
+  if (vt > 0.02) {
+    const ex = pad.l + vt * cw;
+    [[percS, '#0F6E56'], [actC, '#A32D2D'], [devFric, '#534AB7']].forEach(([fn, c]) => {
+      ctx.beginPath(); ctx.arc(ex, pad.t + ch - (fn(vt) / 100) * ch, 4, 0, Math.PI * 2);
+      ctx.fillStyle = c; ctx.fill();
+    });
+  }
+
+  ctx.fillStyle = isDk ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)';
+  ctx.font = '11px "DM Sans", system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('100', pad.l + 2, pad.t + 5);
+  ctx.fillText('0', pad.l + 2, h - pad.b - 2);
+}
+
+const NN = 12;
+const EDGES = [[0,1],[1,2],[2,3],[0,4],[4,5],[5,6],[1,5],[2,6],[3,7],[6,7],[7,8],[4,8],[8,9],[9,10],[10,11],[5,9],[6,10],[3,11]];
+const seeds = Array.from({ length: NN }, () => ({ dx: (Math.random()-0.5)*2, dy: (Math.random()-0.5)*2, p: Math.random()*Math.PI*2 }));
+
+function drawStruct(v) {
+  const { x: ctx, w, h } = initC('cv-s');
+  ctx.clearRect(0, 0, w, h);
+  const t = v / 100;
+  const base = [];
+  const gx = w * 0.2, gy = h * 0.22;
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++)
+    base.push({ x: w/2 + (c-1.5)*gx, y: h/2 + (r-1)*gy });
+
+  const pts = base.map((p, i) => {
+    const s = seeds[i], mag = t*t*0.9;
+    return { x: p.x+s.dx*mag*30+Math.sin(s.p+t*2)*mag*8, y: p.y+s.dy*mag*30+Math.cos(s.p+t*1.5)*mag*7 };
+  });
+
+  const cr = Math.round(15+t*195), cg = Math.round(110-t*50), cb = Math.round(86-t*61);
+
+  EDGES.forEach(([a,b]) => {
+    ctx.beginPath();
+    if (t > 0.3) {
+      const wb = (t-0.3)*18;
+      ctx.moveTo(pts[a].x, pts[a].y);
+      ctx.quadraticCurveTo((pts[a].x+pts[b].x)/2+(Math.random()-0.5)*wb, (pts[a].y+pts[b].y)/2+(Math.random()-0.5)*wb, pts[b].x, pts[b].y);
+    } else { ctx.moveTo(pts[a].x, pts[a].y); ctx.lineTo(pts[b].x, pts[b].y); }
+    ctx.strokeStyle = `rgba(${cr},${cg},${cb},${0.22-t*0.12})`; ctx.lineWidth = 0.9-t*0.3; ctx.stroke();
+  });
+
+  const extra = Math.floor(t*t*7);
+  for (let i = 0; i < extra; i++) {
+    const a = Math.floor(Math.random()*NN); let b = (a+1+Math.floor(Math.random()*(NN-1)))%NN;
+    ctx.beginPath(); ctx.moveTo(pts[a].x, pts[a].y); ctx.lineTo(pts[b].x, pts[b].y);
+    ctx.strokeStyle = `rgba(${cr},${cg},${cb},0.05)`; ctx.lineWidth = 0.4; ctx.stroke();
+  }
+
+  pts.forEach(p => {
+    ctx.beginPath(); ctx.arc(p.x, p.y, 3.5+Math.random()*t*2, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(${cr},${cg},${cb},${0.75-t*0.25})`; ctx.fill();
+  });
+
+  if (t > 0.5) for (let i = 0; i < Math.floor((t-0.5)*8); i++) {
+    ctx.beginPath(); ctx.arc(w*0.1+Math.random()*w*0.8, h*0.1+Math.random()*h*0.8, 1.5+Math.random()*2, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(${cr},${cg},${cb},0.1)`; ctx.fill();
+  }
+}
+
+function updateSurface(v) {
+  const t = v / 100;
+  document.getElementById('mb-v').style.width = Math.min(35+t*65,98)+'%';
+  document.getElementById('mv-v').textContent = Math.round(8+t*32);
+  document.getElementById('mb-t').style.width = Math.min(94+t*5,99)+'%';
+  document.getElementById('mv-t').textContent = Math.min(99, Math.round(94+t*5))+'%';
+  document.getElementById('mb-d').style.width = Math.min(40+t*55,95)+'%';
+  document.getElementById('mv-d').textContent = Math.round(2+t*12);
+  document.getElementById('mb-f').style.width = Math.min(30+t*65,95)+'%';
+  document.getElementById('mv-f').textContent = Math.round(3+t*18);
+
+  const mood = document.getElementById('mood-indicator');
+  if (t < 0.25) { mood.textContent = 'Confident'; mood.style.color = '#0F6E56'; }
+  else if (t < 0.5) { mood.textContent = 'Productive'; mood.style.color = '#3B6D11'; }
+  else if (t < 0.75) { mood.textContent = 'Excited'; mood.style.color = '#0F6E56'; }
+  else { mood.textContent = 'Thriving'; mood.style.color = '#0F6E56'; }
+}
+
+function updateDX(v) {
+  const feed = document.getElementById('dx-feed');
+  const empty = document.getElementById('dx-empty');
+  const visible = THOUGHTS.filter(th => v >= th.at);
+
+  if (visible.length === 0) {
+    empty.style.display = '';
+    feed.querySelectorAll('.dx-item').forEach(el => el.remove());
+  } else {
+    empty.style.display = 'none';
+    const existing = feed.querySelectorAll('.dx-item');
+    if (visible.length < existing.length) {
+      for (let i = visible.length; i < existing.length; i++) existing[i].remove();
+    } else if (visible.length > existing.length) {
+      for (let i = existing.length; i < visible.length; i++) {
+        const th = visible[i], sc = SEV_COLORS[th.sev];
+        const el = document.createElement('div');
+        el.className = 'dx-item';
+        el.style.borderLeftColor = sc.border;
+        el.style.background = sc.bg;
+        const p = document.createElement('p');
+        p.className = 'dx-text';
+        p.style.color = sc.text;
+        p.textContent = th.text;
+        el.appendChild(p);
+        const tg = document.createElement('span');
+        tg.className = 'dx-tag';
+        tg.style.background = sc.tagBg;
+        tg.style.color = sc.tagColor;
+        tg.textContent = th.tag;
+        el.appendChild(tg);
+        feed.appendChild(el);
+      }
+      feed.scrollTop = feed.scrollHeight;
+    }
+  }
+
+  const fdots = document.getElementById('f-dots');
+  fdots.innerHTML = '';
+  for (let i = 0; i < 15; i++) {
+    const d = document.createElement('div');
+    d.className = 'f-dot';
+    d.style.background = i < visible.length ? SEV_COLORS[visible[i].sev].border : 'var(--border-light)';
+    fdots.appendChild(d);
+  }
+  document.getElementById('f-count').textContent = visible.length;
+  document.getElementById('f-count').style.color = visible.length > 10 ? '#A32D2D' : visible.length > 5 ? '#BA7517' : 'var(--text-secondary)';
+
+  const shdr = document.getElementById('s-hdr');
+  if (v < 40) shdr.style.color = 'var(--text-primary)';
+  else if (v < 65) shdr.style.color = '#BA7517';
+  else shdr.style.color = '#A32D2D';
+}
+
+function updatePhase(v) {
+  const active = v < 15 ? 0 : v < 40 ? 1 : v < 65 ? 2 : v < 85 ? 3 : 4;
+  for (let i = 0; i < 5; i++) document.getElementById('ph-'+i).style.opacity = i <= active ? '1' : '0.2';
+  const vt = v / 100;
+  const gap = Math.round(Math.max(0, percS(vt) - actC(vt)));
+  document.getElementById('gap-out').textContent = 'Gap: ' + gap;
+  document.getElementById('gap-out').style.color = gap > 50 ? '#A32D2D' : gap > 25 ? '#BA7517' : 'var(--text-secondary)';
+}
+
+function update(v) {
+  document.getElementById('vol-out').textContent = v + '%';
+  drawDiv(v); drawStruct(v); updateSurface(v); updateDX(v); updatePhase(v);
+}
+
+window.addEventListener('resize', () => update(+document.getElementById('slider').value));
+update(0);
+</script>
+
+</body>
+</html>
